@@ -8,8 +8,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Enumeration;
-import java.util.Scanner;
 
 public class WebScraperServer
 {
@@ -47,56 +45,137 @@ public class WebScraperServer
         return result.toString();
     }
 
-    public static void main(String[] args) throws IOException
-    {
+    public static void main(String[] args) throws IOException {
+
         ServerSocket serverSocket = new ServerSocket(5000);
 
-        while(true)
-        {
-            System.out.println("Server is running...");
-            Socket socket = serverSocket.accept();
-            System.out.println("Client connected");
+        try {
 
+            while (true) {
+                System.out.println("Server is running...");
+                Socket socket = serverSocket.accept();
+                System.out.println("Client connected");
+
+                ClientHandler clientHandler = new ClientHandler(socket);
+                Thread thread = new Thread(clientHandler);
+                thread.start();
+
+                InputStreamReader in = new InputStreamReader(socket.getInputStream());
+                BufferedReader bf = new BufferedReader(in);
+                PrintWriter pr = new PrintWriter(socket.getOutputStream(), true);
+
+                while (true) {
+
+                    String clientMessage = bf.readLine();
+                    if (clientMessage == null || clientMessage.equals("exit")) {
+                            System.out.println("Client disconnected. Closing connection...");
+                            pr.println("exit");
+                        // dobaveno sled trugvane
+                        socket.close();
+                        break;
+                    } else if (clientMessage.equalsIgnoreCase("admin")) {
+                        pr.println("admin");
+                        pr.close();
+                        bf.close();
+                        in.close();
+                        socket.close();
+                        serverSocket.close();
+                        return;
+                    }
+
+
+                    int numberReceived = Integer.parseInt(clientMessage);
+                    String scrapingResult = scraping(numberReceived);
+                    System.out.println(scrapingResult);
+                    //System.out.println("client: " + clientMessage);
+
+                    pr.println(scrapingResult);
+                    pr.println("EndOfSending");
+                    pr.flush();
+                }
+            }
+
+            //System.out.println("Admin command received. Shutting down server...");
+        }
+        catch (IOException | NumberFormatException e)
+        {
+            System.out.println("Error: " + e.getMessage());
+        }
+
+
+    }
+}
+
+
+
+/*
+public static void main(String[] args) throws IOException {
+    ServerSocket serverSocket = new ServerSocket(5000);
+
+    System.out.println("Server is running...");
+
+    while (true) {
+        // Приемане на нов клиент
+        Socket clientSocket = serverSocket.accept();
+        System.out.println("New client connected!");
+
+        // Стартиране на нова нишка за клиента
+        ClientHandler clientHandler = new ClientHandler(clientSocket);
+        Thread thread = new Thread(clientHandler);
+        thread.start();
+    }
+}
+
+ */
+
+
+
+
+
+
+
+
+
+/* class ClientHandler implements Runnable {
+    private Socket socket;
+
+    public ClientHandler(Socket socket) {
+        this.socket = socket;
+    }
+
+    @Override
+    public void run() {
+        try (
             InputStreamReader in = new InputStreamReader(socket.getInputStream());
             BufferedReader bf = new BufferedReader(in);
             PrintWriter pr = new PrintWriter(socket.getOutputStream(), true);
-
-            while (true)
-            {
-                String clientMessage = bf.readLine();
-                if (clientMessage == null)
-                {
-                    System.out.println("Client disconnected. Closing connection...");
+        ) {
+            String clientMessage;
+            while ((clientMessage = bf.readLine()) != null) {
+                if (clientMessage.equalsIgnoreCase("exit")) {
+                    System.out.println("Client disconnected.");
+                    pr.println("exit");
                     break;
+                } else if (clientMessage.equalsIgnoreCase("admin")) {
+                    System.out.println("Admin shutting down the server.");
+                    pr.println("admin");
+                    System.exit(0); // Спира целия сървър
+                } else {
+                    int numberReceived = Integer.parseInt(clientMessage);
+                    String result = WebScraperServer.scraping(numberReceived);
+                    pr.println(result);
+                    pr.println("EndOfSending");
                 }
-                if (clientMessage.equalsIgnoreCase("admin"))
-                {
-                    pr.println("Server shutting down...");
-                    pr.close();
-                    bf.close();
-                    in.close();
-                    socket.close();
-                    serverSocket.close();
-                    return;
-                }
-                else if (clientMessage.equalsIgnoreCase("Client disconnected!"))
-                {
-                    // ne mi trqbvaaa!
-                    System.out.println("Client disconnected!");
-                    break;
-                }
-
-                int numberReceived = Integer.parseInt(clientMessage);
-                String scrapingResult = scraping(numberReceived);
-                System.out.println(scrapingResult);
-                //System.out.println("client: " + clientMessage);
-
-                pr.println(scrapingResult);
-                pr.println("EndOfSending");
-                pr.flush();
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.err.println("Error with client: " + e.getMessage());
+        } finally {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                System.err.println("Error closing client socket: " + e.getMessage());
             }
         }
-
-        //System.out.println("Admin command received. Shutting down server...");
     }
 }
+*/

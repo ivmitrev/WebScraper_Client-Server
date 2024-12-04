@@ -60,31 +60,52 @@ public class WebScraperClient
            if(number == -2)
            {
               pr.println("admin");
-              break;
+              //break;
            }
            else if(number == -1)
            {
                // ne mi trqbvaa
-               pr.println("Client disconnected!");
-               break;
+               pr.println("exit");
+               //break;
            }
-           pr.println(number);
+           else
+           {
+               pr.println(number);
+           }
+
            pr.flush();
 
            String line;
            System.out.println("Server: ");
            while(!((line = bf.readLine()).equals("EndOfSending")))
            {
+               if(line.equals("admin"))
+               {
+                   socket.close();
+                   bf.close();
+                   pr.close();
+                   in.close();
+                   System.out.println("Server and client shutting down!");
+                   return;
+               }
+               else if(line.equals("exit"))
+               {
+                   socket.close();
+                   bf.close();
+                   pr.close();
+                   in.close();
+                   System.out.println("Client exiting!");
+                   return;
+               }
                System.out.println(line);
            }
 
        }
 
-       socket.close();
-       bf.close();
-       pr.close();
-       in.close();
-       System.out.println("Client exiting!");
+
     }
 
 }
+
+//TODO dolu da implementiram komentara v survura
+//TODO da sloja try catch s ioexception e
