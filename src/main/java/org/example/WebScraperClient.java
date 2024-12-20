@@ -1,5 +1,4 @@
 package org.example;
-
 import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
@@ -14,13 +13,9 @@ public class WebScraperClient
         while (!flagForInput)
         {
 
-            System.out.print("Please enter a number: ");
+            System.out.print("Please enter a number or exit: ");
             String input = scanner.nextLine();
-            if(input.equals("admin"))
-            {
-                return -2;
-            }
-            else if(input.equals("exit"))
+            if(input.equals("exit"))
             {
                 return -1;
             }
@@ -30,13 +25,17 @@ public class WebScraperClient
                 number = Integer.parseInt(input);
                 if(number <= 0)
                 {
-                    throw new NumberFormatException("Input must be a positive number and not zero!");
+                    throw new IllegalArgumentException("Input must be a positive number and not zero!");
                 }
                 flagForInput = true;
             }
             catch (NumberFormatException e)
             {
-                System.out.println("Invalid input. Please enter a valid integer!");
+                System.out.println("Invalid input. Please enter a valid integer or valid command!");
+            }
+            catch (IllegalArgumentException e)
+            {
+                System.out.println(e.getMessage());
             }
 
 
@@ -48,64 +47,43 @@ public class WebScraperClient
 
     public static void main(String[] args) throws IOException
     {
-       Socket socket = new Socket("localhost",5000);
-       PrintWriter pr = new PrintWriter(socket.getOutputStream());
+       try( Socket socket = new Socket("localhost",5000);
+            PrintWriter pr = new PrintWriter(socket.getOutputStream());
+            InputStreamReader in = new InputStreamReader(socket.getInputStream());
+            BufferedReader bf = new BufferedReader(in) ) {
 
-       InputStreamReader in = new InputStreamReader(socket.getInputStream());
-       BufferedReader bf = new BufferedReader(in);
-
-       while(true)
-       {
-           int number = getInput();
-           if(number == -2)
-           {
-              pr.println("admin");
-              //break;
-           }
-           else if(number == -1)
-           {
-               // ne mi trqbvaa
-               pr.println("exit");
-               //break;
-           }
-           else
-           {
-               pr.println(number);
-           }
-
-           pr.flush();
-
-           String line;
-           System.out.println("Server: ");
-           while(!((line = bf.readLine()).equals("EndOfSending")))
-           {
-               if(line.equals("admin"))
-               {
-                   socket.close();
-                   bf.close();
-                   pr.close();
-                   in.close();
-                   System.out.println("Server and client shutting down!");
-                   return;
+           while (true) {
+               int number = getInput();
+               if (number == -1) {
+                   pr.println("exit");
+               } else {
+                   pr.println(number);
                }
-               else if(line.equals("exit"))
-               {
-                   socket.close();
-                   bf.close();
-                   pr.close();
-                   in.close();
-                   System.out.println("Client exiting!");
-                   return;
-               }
-               System.out.println(line);
-           }
 
+               pr.flush();
+
+               String line;
+               System.out.println("Server: ");
+               while (!((line = bf.readLine()).equals("EndOfSending"))) {
+                   if (line.equals("exit")) {
+                       socket.close();
+                       bf.close();
+                       pr.close();
+                       in.close();
+                       System.out.println("Client exiting!");
+                       return;
+                   }
+                   System.out.println(line);
+               }
+               System.out.println("--------------------------------------");
+
+           }
        }
-
+       catch (IOException e)
+       {
+           System.err.println("Error: " + e.getMessage());
+       }
 
     }
 
 }
-
-//TODO dolu da implementiram komentara v survura
-//TODO da sloja try catch s ioexception e
